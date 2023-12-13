@@ -1,35 +1,56 @@
+properties([parameters([choice(choices: ['AWS-Cost-Reporting', 'Three-Tier-Application', 'ALB-EC2', 'Hello-World', 'API-Gateway-POST', 'Hello-World-Json', 'ASG-ELB', 'Hosts-Cidr', 'ASG-LB', 'Lambda-Function', 'Auto-Scaling', 'Lambda-S3-Trigger-With-SNS-Topic', 'AWS-Glue-S3', 'Lambda-Trigger-With-S3', 'Cloudwatch-Alarm-Lambda-Failure', 'List-Datatype', 'Cloudwatch-Alarm-Lambda-Failure-Pattern-Mail', 'Module-S3-Bucket', 'Cloudwatch-Alarm-Lambda-Failure-SQS', 'Modules-Demo', 'DynamoDB', 'Module-VPC', 'DynamoDB-Streams-With-Existing-Lambda-Trigger', 'Multi-Block', 'DynamoDB-Streams-With-New-Lambda-Trigger', 'EC2-Instance', 'S3-Static-Website', 'EC2-Instance-With-SG', 'SecurityGroup-EC2', 'EC2-Snapshot', 'Simple-RDS-Instance', 'ECS-Fargate', 'Subnet', 'env-var', 'Terraform-Variables', 'function-lookup', 'Trigger-Lambda-Using-EventBridge', 'function-lookup2', 'Variables', 'function-lower', 'VPC'], name: 'File_Name'), string(defaultValue: 'Terraform-Deployment', name: 'Pipeline'), choice(choices: ['plan', 'apply', 'destroy'], name: 'Terraform_Action')])])
 pipeline {
     agent any
-    
     stages {
-        stage ("checkout from GIT") {
+        stage('Preparing') {
             steps {
-                git branch: 'main', credentialsId: '7b5c6ae5-aef1-4049-8c6f-390b3dd64935', url: 'https://github.com/Denis-DEV-OPS/jenkins-terraform-pipeline'
+                sh 'echo Preparing'
             }
         }
-        stage ("terraform init") {
+        stage('Git Pulling') {
             steps {
-                sh 'terraform init'
+                git branch: 'master', url: 'https://github.com/AmanPathak-DevOps/Terraform-for-AWS.git'
+                sh 'ls'
             }
         }
-        stage ("terraform fmt") {
+        stage('Init') {
             steps {
-                sh 'terraform fmt'
+                echo "Enter File Name ${params.File_Name}"
+                echo "Pipeline Name ${params.Pipeline}"
+                withAWS(credentials: 'jenkins-environment', region: 'us-east-1') {
+                sh 'terraform -chdir=/var/lib/jenkins/jobs/${Pipeline}/workspace/Non-Modularized/${File_Name}/ init --lock=false'
+                }
             }
         }
-        stage ("terraform validate") {
+        stage('Code Analysis') {
+            when {
+                expression { params.Terraform_Action != 'destroy'}
+            }
             steps {
-                sh 'terraform validate'
+                sh '''
+                    sudo curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+                    tfsec Non-Modularized/${File_Name}
+                '''
             }
         }
-        stage ("terrafrom plan") {
+        stage('Action') {
             steps {
-                sh 'terraform plan '
-            }
-        }
-        stage ("terraform apply") {
-            steps {
-                sh 'terraform apply --auto-approve'
+                echo "${params.Terraform_Action}"
+                withAWS(credentials: 'jenkins-environment', region: 'us-east-1') {
+                sh 'terraform get -update' 
+                    script {    
+                        if (params.Terraform_Action == 'plan') {
+                            sh 'terraform -chdir=Non-Modularized/${File_Name}/ plan --lock=false'
+                        }   else if (params.Terraform_Action == 'apply') {
+                            sh 'terraform -chdir=Non-Modularized/${File_Name}/ apply --lock=false -auto-approve'
+                        }   else if (params.Terraform_Action == 'destroy') {
+                            sh 'terraform -chdir=Non-Modularized/${File_Name}/ destroy --lock=false -auto-approve'
+                        } else {
+                            error "Invalid value for Terraform_Action: ${params.Terraform_Action}"
+                        }
+                    }
+                }
+                sh 'rm -rf /var/lib/jenkins/jobs/Terraform-Deployment/workspace/env.properties'
             }
         }
     }
