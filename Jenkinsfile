@@ -1,15 +1,13 @@
 pipeline {
     agent any
-    }
-
+    
     tools {
         terraform 'jenkins-terraform'
     }
-
     stages {
         stage ("checkout from GIT") {
             steps {
-                git branch: 'main', url: 'https://github.com/Denis-DEV-OPS/jenkins-terraform-pipeline'
+                git branch: 'main', credentialsId: '7b5c6ae5-aef1-4049-8c6f-390b3dd64935', url: 'https://github.com/Denis-DEV-OPS/jenkins-terraform-pipeline'
             }
         }
         stage ("terraform init") {
@@ -38,3 +36,4 @@ pipeline {
             }
         }
     }
+}
