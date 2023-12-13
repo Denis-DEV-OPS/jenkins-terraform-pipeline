@@ -17,7 +17,7 @@ pipeline {
             steps {
                 echo "Enter File Name ${params.File_Name}"
                 echo "Pipeline Name ${params.Pipeline}"
-                withAWS(credentials: 'jenkins-environment', region: 'us-east-1') {
+                withAWS(credentials: '7b5c6ae5-aef1-4049-8c6f-390b3dd64935', region: 'us-east-1') {
                 sh 'terraform -chdir=/var/lib/jenkins/jobs/${Pipeline}/workspace/Non-Modularized/${File_Name}/ init --lock=false'
                 }
             }
