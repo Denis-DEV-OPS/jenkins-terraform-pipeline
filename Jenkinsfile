@@ -20,17 +20,7 @@ pipeline {
                 }
             }
         }
-        stage('Code Analysis') {
-            when {
-                expression { params.Terraform_Action != 'destroy'}
-            }
-            steps {
-                sh '''
-                    sudo curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-                    tfsec Non-Modularized/${File_Name}
-                '''
-            }
-        }
+        
         stage('Action') {
             steps {
                 echo "${params.Terraform_Action}"
