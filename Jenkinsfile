@@ -2,7 +2,7 @@ pipeline {
     agent any
     }
 
-tools {
+    tools {
         terraform 'jenkins-terraform'
     }
 
