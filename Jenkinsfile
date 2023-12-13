@@ -24,7 +24,7 @@ pipeline {
         stage('Action') {
             steps {
                 echo "${params.Terraform_Action}"
-                withAWS(credentials: 'jenkins-environment', region: 'us-east-1') {
+                withAWS(credentials: '7b5c6ae5-aef1-4049-8c6f-390b3dd64935', region: 'us-east-1') {
                 sh 'terraform get -update' 
                     script {    
                         if (params.Terraform_Action == 'plan') {
@@ -38,7 +38,7 @@ pipeline {
                         }
                     }
                 }
-                sh 'rm -rf /var/lib/jenkins/jobs/Terraform-Deployment/workspace/env.properties'
+                
             }
         }
     }
